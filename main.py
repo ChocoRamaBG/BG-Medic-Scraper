@@ -17,24 +17,23 @@ options = webdriver.ChromeOptions()
 options.add_argument('--headless=new') 
 
 options.add_argument('--start-maximized') 
-options.add_argument('--window-size=1920,1080') # Лъжем го, че имаме голям монитор
+options.add_argument('--window-size=1920,1080')
 options.add_argument('--disable-blink-features=AutomationControlled') 
 options.add_argument('--no-sandbox') 
 options.add_argument('--disable-dev-shm-usage') 
 options.add_argument('--ignore-certificate-errors')
-options.add_argument('--disable-gpu') # Важно за Linux среди
+options.add_argument('--disable-gpu') 
 
-# Флагове да не заспива (макар че в headless е по-лесно)
+# Флагове да не заспива
 options.add_argument('--disable-backgrounding-occluded-windows')
 options.add_argument('--disable-renderer-backgrounding')
 options.add_argument('--disable-background-timer-throttling')
 options.add_argument('--disable-popup-blocking') 
 
-# Слагаме User-Agent, да не ни хванат веднага, че сме роботи
+# User-Agent
 options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
 
-# --- СТАРТИРАНЕ НА ДРАЙВЕРА С МЕНИДЖЪР ---
-# Това инсталира Chrome драйвера автоматично в облака
+# --- СТАРТИРАНЕ ---
 print("Bootleg Chat: Инсталирам драйверчовци...")
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
@@ -60,15 +59,14 @@ def save_to_excel(data, filename):
     try:
         df = pd.DataFrame(data)
         df.to_excel(filename, index=False)
-        print(f"   [SAVE] Записах {len(data)} редчовци в Ексела.")
+        # Махаме принта, за да не спамим лога, ще принтим само в основния цикъл
     except Exception as e:
         print(f"   [ERROR] Не можах да запиша файла: {e}")
 
 print("Bootleg Chat: Минаваме на директна URL атака в облака...")
 
 # --- ВЪНШЕН ЦИКЪЛ: РЕГИОНИ (02 до 30) ---
-# ВНИМАНИЕ: В GitHub имаш лимит от 6 часа. Ако гръмне по време, намали рейнджа тук.
-for r in range(2, 3): # was 2, 29
+for r in range(2, 31): 
     region_code = f"{r:02d}"
     page_num = 1 
     
@@ -100,7 +98,7 @@ for r in range(2, 3): # was 2, 29
 
         # Чакаме таблицата
         try:
-            rows = WebDriverWait(driver, 20).until( # Намалих малко тайм-аута за бързина
+            rows = WebDriverWait(driver, 20).until(
                 EC.presence_of_all_elements_located((By.XPATH, "//table//tr[td]"))
             )
         except TimeoutException:
@@ -141,7 +139,6 @@ for r in range(2, 3): # was 2, 29
                 pass
                 
         except NoSuchElementException:
-            # Ако няма summary, може да е само 1 страница или грешка
             pass
 
         # Скрейпинг на редовете
@@ -180,21 +177,18 @@ for r in range(2, 3): # was 2, 29
             except Exception:
                 continue
         
+        # --- ТУК Е МАГИЯТА (SAVE EVERY PAGE) ---
+        save_to_excel(all_data, output_filename)
+        # ---------------------------------------
+
         # --- ПРОВЕРКА ЗА ИЗХОД ---
         if is_last_page:
             print(f"  🏁 Достигнахме края на Регион {region_code}.")
-            # Записваме след всеки завършен регион за сигурност
-            save_to_excel(all_data, output_filename) 
             break 
         
         page_num += 1
-        
-        # В облака може и без sleep, ама айде да не сме нахални
-        # time.sleep(0.5) 
 
 # Финален запис
 save_to_excel(all_data, output_filename)
 driver.quit()
-print(f"Готово, Гащник! Всичко е в {output_filename}. На баба ти хвърчилото литна в облака!")
-
-
+print(f"Готово, Гащник! Всичко е в {output_filename}.")
