@@ -68,7 +68,7 @@ print("Bootleg Chat: Минаваме на директна URL атака в о
 
 # --- ВЪНШЕН ЦИКЪЛ: РЕГИОНИ (02 до 30) ---
 # ВНИМАНИЕ: В GitHub имаш лимит от 6 часа. Ако гръмне по време, намали рейнджа тук.
-for r in range(2, 29):
+for r in range(2, 3): # was 2, 29
     region_code = f"{r:02d}"
     page_num = 1 
     
@@ -196,4 +196,5 @@ for r in range(2, 29):
 save_to_excel(all_data, output_filename)
 driver.quit()
 print(f"Готово, Гащник! Всичко е в {output_filename}. На баба ти хвърчилото литна в облака!")
+
 
