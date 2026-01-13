@@ -40,7 +40,7 @@ print("Bootleg Chat: Паля гумите...")
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
 all_data = []
-output_filename = "bg_medics_dynamic_fixed.xlsx" 
+output_filename = "bg_medics_dynamic.xlsx" 
 
 def get_text_safe(element, xpath):
     try:
@@ -68,7 +68,7 @@ def save_to_excel(data, filename):
 print("Bootleg Chat: Атака...")
 
 # --- OUTER LOOP: REGIONS ---
-for r in range(24, 29): 
+for r in range(23, 29): 
     region_code = f"{r:02d}"
     page_num = 1 
     
@@ -181,3 +181,4 @@ for r in range(24, 29):
 save_to_excel(all_data, output_filename)
 driver.quit()
 print(f"Готово, Гащник! Всички {len(all_data)} записчовци са вътре.")
+
