@@ -71,7 +71,7 @@ print("Bootleg Chat: Минаваме на директна URL атака в о
 
 # --- OUTER LOOP: REGIONS ---
 # You can change the range back to (2, 30) when ready
-for r in range(24, 29): 
+for r in range(24, 30): 
     region_code = f"{r:02d}"
     page_num = 1 
     
@@ -197,3 +197,4 @@ for r in range(24, 29):
 save_to_excel(all_data, output_filename)
 driver.quit()
 print(f"Готово, Гащник! All clean and saved in {output_filename}.")
+
