@@ -13,15 +13,14 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 # --- HELPER TO CLEAN NASTY CHARACTERS ---
 def clean_text(text):
     """
-    Removes invisible control characters that break Excel.
-    Hell, it scrubs them good.
+    Scrubbing the dirty characters so Excel doesn't cry.
     """
     if not isinstance(text, str):
         return text
     # Remove non-printable characters (ASCII 0-31 except tab/newline)
     return re.sub(r'[\x00-\x1F\x7F]+', '', text).strip()
 
-# --- CLOUD SETTINGS (HEADLESS GANGSTA MODE) ---
+# --- CLOUD SETTINGS ---
 options = webdriver.ChromeOptions()
 options.add_argument('--headless=new') 
 options.add_argument('--start-maximized') 
@@ -37,7 +36,7 @@ options.add_argument('--disable-popup-blocking')
 options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
 
 # --- START ---
-print("Bootleg Chat: Инсталирам драйверчовци...")
+print("Bootleg Chat: Паля гумите...")
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
 all_data = []
@@ -61,17 +60,15 @@ def save_to_excel(data, filename):
     if not data: return
     try:
         df = pd.DataFrame(data)
-        # Using a context manager is sometimes safer, but simple save is fine
         df.to_excel(filename, index=False)
-        print(f"  💾 [SAVED] Saved {len(data)} recordchovtsi to Excel.")
+        # Няма да принтим "Saved" всеки път, че конзолата ще стане на салата
     except Exception as e:
-        print(f"   [ERROR] What the fuck? Could not save file: {e}")
+        print(f"   [ERROR] Мамка му, не можах да запиша файла: {e}")
 
-print("Bootleg Chat: Минаваме на директна URL атака в облака...")
+print("Bootleg Chat: Атака...")
 
 # --- OUTER LOOP: REGIONS ---
-# You can change the range back to (2, 30) when ready
-for r in range(24, 30): 
+for r in range(24, 29): 
     region_code = f"{r:02d}"
     page_num = 1 
     
@@ -85,7 +82,6 @@ for r in range(24, 30):
         
         print(f"  > Отварям стр. {page_num} за регион {region_code}...")
         
-        # Retry logic for loading
         try:
             driver.get(target_url)
         except Exception:
@@ -96,40 +92,36 @@ for r in range(24, 30):
                 print("  ! Отказвам се от тая страница.")
                 break 
 
-        # 404 Check
         if "404" in driver.title or "Page not found" in driver.page_source:
-            print(f"  🏁 Регион {region_code} finished or empty.")
+            print(f"  🏁 Регион {region_code} приключи.")
             break
 
-        # Wait for table
         try:
             rows = WebDriverWait(driver, 10).until(
                 EC.presence_of_all_elements_located((By.XPATH, "//table//tr[td]"))
             )
         except TimeoutException:
             if "Няма намерени" in driver.page_source:
-                print(f"  🏁 Регион {region_code} is empty.")
+                print(f"  🏁 Регион {region_code} е празен.")
                 break
             else:
-                # One reload attempt
-                print("  ! Timeout. Refreshing page...")
+                print("  ! Timeout. Refresh...")
                 driver.refresh()
                 try:
                     rows = WebDriverWait(driver, 10).until(
                         EC.presence_of_all_elements_located((By.XPATH, "//table//tr[td]"))
                     )
                 except:
-                    print("  ! Still nothing. Skip.")
+                    print("  ! Пак греда. Скип.")
                     break
 
         # --- DATA COLLECTION ---
         summary_text = "-"
         is_last_page = False
         
-        # Grab summary info to calculate progress
         try:
             summary_element = driver.find_element(By.CSS_SELECTOR, "div.summary")
-            summary_text = clean_text(summary_element.text) # Clean this too
+            summary_text = clean_text(summary_element.text)
             
             match = re.search(r'-(\d+)\s+от\s+(\d+)', summary_text)
             if match:
@@ -142,13 +134,9 @@ for r in range(24, 30):
         except NoSuchElementException:
             pass
 
-        # Scrape rows
         for row in rows:
             try:
                 uin = get_text_safe(row, "./td[1]")
-                
-                # Default values
-                adr = gadr = tel = wrk = spec_attr = "-"
                 
                 try:
                     img = row.find_element(By.CSS_SELECTOR, "img.expand")
@@ -158,20 +146,18 @@ for r in range(24, 30):
                     wrk = get_attr_safe(img, "wrk")
                     spec_attr = get_attr_safe(img, "spec")
                 except NoSuchElementException:
-                    pass
+                    adr = gadr = tel = wrk = spec_attr = "-"
 
                 name = get_text_safe(row, "./td[3]")
                 spec_text = get_text_safe(row, "./td[4]")
 
-                # IMPORTANT: CLEAN THE DATA BEFORE ADDING TO LIST
-                # This fixes the "cannot be used in worksheets" error
                 data_row = {
                     "Region Code": clean_text(region_code),
                     "UIN": clean_text(uin),
                     "Address (Hidden)": clean_text(adr),
                     "G Address (Hidden)": clean_text(gadr),
                     "Phone": clean_text(tel),
-                    "Workplace": clean_text(wrk), # <--- This was the culprit
+                    "Workplace": clean_text(wrk), 
                     "Specialty (Hidden)": clean_text(spec_attr),
                     "Name": clean_text(name),
                     "Specialty (Visible)": clean_text(spec_text),
@@ -182,10 +168,9 @@ for r in range(24, 30):
             except Exception:
                 continue
         
-        # --- SAVE STRATEGY ---
-        # Only save every 10 pages OR if it is the last page of the region
-        if page_num % 10 == 0 or is_last_page:
-            save_to_excel(all_data, output_filename)
+        # --- SAVE EVERY SINGLE DAMN TIME ---
+        save_to_excel(all_data, output_filename)
+        # -----------------------------------
 
         if is_last_page:
             print(f"  🏁 Достигнахме края на Регион {region_code}.")
@@ -193,8 +178,6 @@ for r in range(24, 30):
         
         page_num += 1
 
-# Final save
 save_to_excel(all_data, output_filename)
 driver.quit()
-print(f"Готово, Гащник! All clean and saved in {output_filename}.")
-
+print(f"Готово, Гащник! Всички {len(all_data)} записчовци са вътре.")
